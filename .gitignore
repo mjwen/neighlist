@@ -1,4 +1,5 @@
 *.o
+*.so
 neigh
 *.xyz
 .DS_Store

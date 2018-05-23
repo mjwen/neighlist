@@ -1,23 +1,20 @@
 CC = g++
-CFLAGS = -O2 -g -Wall # include file should be added here using ``-I''
-LDFLAGS =             # Extra flags to give to compilers when they are supposed
-                      # to invoke the linker, ‘ld’, such as -L.
-LDLIBS = -lm          # Library flags or names given to compilers when they are supposed
-                      # to invoke the linker  e.g. -lm
+CFLAGS = -O2 -g -Wall -fPIC
+LDFLAGS =
+LDLIBS = -lm
 
-
-SOURCES = example.cpp neighbor_list.cpp
+SOURCES = src/neighbor_list.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
-# linkding
-neigh: $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+# linking
+libneigh.so: $(OBJECTS)
+	$(CC) $(LDFLAGS) -shared -o $@ $^ $(LDLIBS)
 
-#.cpp.o:
-%.o: %.cpp
+# creating objects
+src/%.o: src/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
 .PHONY: clean
 clean:
-	rm *.o neigh *.xyz
+	rm *.so src/*.o examples/*.o examples/graphite

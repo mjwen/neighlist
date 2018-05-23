@@ -1,5 +1,10 @@
-Building neighbor list of a group of atoms. If periodic boundary condition is
-used, it creates padding atoms and then build the neighbor lists.
+Build neighbor list for a group of atoms with the support to create padding atoms
+when periodic boundary condition is used.
+
+To make this library:
+$ make
+
+See examples/graphite.cpp for a hint on how to use this.
 
 $ make
-$ ./exec
+$ ./graphite
