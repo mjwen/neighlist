@@ -7,7 +7,6 @@
 //#include <stdio.h>
 
 #include "neighbor_list.h"
-#include "padding.h"
 
 #define DIM 3
 
@@ -71,22 +70,23 @@ int main()
   code[3] = 2;
 
 
+  int Npad;
   std::vector<double> pad_coords;
   std::vector<int> pad_code;
   std::vector<int> pad_image;
 
   /* create padding atoms */
-  set_padding(cell, pbc, cutoff, Natoms, coords, code, pad_coords, pad_code, pad_image);
+  nbl_set_padding(Natoms, cutoff, cell, pbc, coords, code, Npad, pad_coords,
+      pad_code, pad_image);
 
-  int Npad = pad_code.size();
   int total = Natoms + Npad;
 
   double * coords_all = new double[total*DIM];
   int * code_all = new int[total*DIM];
   std::memcpy(coords_all, coords, sizeof(double)*Natoms*DIM);
-  std::memcpy(coords_all + Natoms*DIM, &pad_coords.front(), sizeof(double)*Npad*DIM);
+  std::memcpy(coords_all + Natoms*DIM, pad_coords.data(), sizeof(double)*Npad*DIM);
   std::memcpy(code_all, code, sizeof(int)*Natoms);
-  std::memcpy(code_all + Natoms, &pad_code.front(), sizeof(int)*Npad);
+  std::memcpy(code_all + Natoms, pad_code.data(), sizeof(int)*Npad);
 
 
   /* generate neighborlist */

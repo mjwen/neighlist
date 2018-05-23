@@ -6,11 +6,11 @@ LDLIBS = -lm          # Library flags or names given to compilers when they are 
                       # to invoke the linker  e.g. -lm
 
 
-SOURCES = main.cpp neighbor_list.cpp padding.cpp
+SOURCES = example.cpp neighbor_list.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
 # linkding
-exec: $(OBJECTS)
+neigh: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 #.cpp.o:
@@ -20,4 +20,4 @@ exec: $(OBJECTS)
 
 .PHONY: clean
 clean:
-	rm *.o exec *.xyz
+	rm *.o neigh *.xyz

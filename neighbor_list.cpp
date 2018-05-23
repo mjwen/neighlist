@@ -1,30 +1,14 @@
 // Author: Mingjian Wen (wenxx151@umn.edu)
 
-#include <stdlib.h>
-#include <cstring>
 #include <cmath>
-#include <iostream>
+#include <cstring>
 #include <sstream>
 #include <vector>
+#include "helper.hpp"
 #include "neighbor_list.h"
-
 
 #define DIM 3
 #define TOL 1.0e-10
-
-#define MY_ERROR(message)                                             \
-  {                                                                   \
-    std::cout << "* Error (Neighbor List): \"" << message << "\" : "  \
-              << __LINE__ << ":" << __FILE__ << std::endl;            \
-    exit(1);                                                          \
-  }
-
-#define MY_WARNING(message)                                            \
-  {                                                                    \
-    std::cout << "* Error (Neighbor List) : \"" << message << "\" : "  \
-              << __LINE__ << ":" << __FILE__ << std::endl;             \
-  }
-
 
 void nbl_initialize(NeighList ** const nl)
 {
@@ -191,12 +175,114 @@ int nbl_get_neigh(NeighList const * const nl, int const request, int * const num
 }
 
 
-void coords_to_index(double const * x, int const * size, double const * max,
-    double const * min, int * const index)
+void nbl_set_padding(int const Natoms, double const cutoff, double const * cell,
+    int const * PBC, double const * coords, int const * species,
+    int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
+    std::vector<int> & pad_image)
 {
-  for (int i=0; i<DIM; i++) {
-    index[i] = static_cast<int> (((x[i]-min[i])/(max[i]-min[i])) * size[i]);
-    index[i] = std::min(index[i], size[i]-1);  // handle edge case when x[i] = max[i]
+
+  // transform coords into fractional coords
+  double tcell[9];
+  double fcell[9];
+  transpose(cell, tcell);
+  inverse(tcell, fcell);
+
+  double frac_coords[DIM*Natoms];
+  double min[DIM] = {1e10, 1e10, 1e10};
+  double max[DIM] = {-1e10, -1e10, -1e10};
+  for (int i=0; i<Natoms; i++) {
+    const double* atom_coords = coords + (DIM*i);
+    double x = dot(fcell, atom_coords);
+    double y = dot(fcell+3, atom_coords);
+    double z = dot(fcell+6, atom_coords);
+    frac_coords[DIM*i+0] = x;
+    frac_coords[DIM*i+1] = y;
+    frac_coords[DIM*i+2] = z;
+    if (x < min[0]) min[0] = x;
+    if (y < min[1]) min[1] = y;
+    if (z < min[2]) min[2] = z;
+    if (x > max[0]) max[0] = x;
+    if (y > max[1]) max[1] = y;
+    if (z > max[2]) max[2] = z;
   }
+
+  // add some extra value to deal with edge case
+  for (int i=0; i<DIM; i++) {
+    min[i] -= 1e-10;
+    max[i] += 1e-10;
+  }
+
+    // volume of cell
+  double xprod[DIM];
+  cross(cell+3, cell+6, xprod);
+  double volume = std::abs(dot(cell, xprod));
+
+  // distance between parallelpiped cell faces
+  double dist[DIM];
+  cross(cell+3, cell+6, xprod);
+  dist[0] = volume/norm(xprod);
+  cross(cell+6, cell+0, xprod);
+  dist[1] = volume/norm(xprod);
+  cross(cell, cell+3, xprod);
+  dist[2] = volume/norm(xprod);
+
+  // number of cells in each direction
+  double ratio[DIM];
+  double size[DIM];
+  for (int i=0; i<DIM; i++) {
+    ratio[i] = cutoff/dist[i];
+    size[i] = static_cast<int> (std::ceil(ratio[i]));
+  }
+
+  // creating padding atoms
+  for (int i=-size[0]; i<=size[0]; i++)
+  for (int j=-size[1]; j<=size[1]; j++)
+  for (int k=-size[2]; k<=size[2]; k++) {
+
+    // skip contributing atoms
+    if (i==0 && j==0 && k==0) continue;
+
+    // apply BC
+    if (PBC[0]==0 && i != 0) continue;
+    if (PBC[1]==0 && j != 0) continue;
+    if (PBC[2]==0 && k != 0) continue;
+
+    for (int at=0; at<Natoms; at++) {
+      double x = frac_coords[DIM*at+0];
+      double y = frac_coords[DIM*at+1];
+      double z = frac_coords[DIM*at+2];
+
+      // select the necessary atoms to repeate for the most outside bins
+      // the follwing few lines can be easily understood when assuming size=1
+      if (i == -size[0] && x - min[0] < static_cast<double>(size[0]) - ratio[0])
+        continue;
+      if (i ==  size[0] && max[0] - x < static_cast<double>(size[0]) - ratio[0])
+        continue;
+      if (j == -size[1] && y - min[1] < static_cast<double>(size[1]) - ratio[1])
+        continue;
+      if (j ==  size[1] && max[1] - y < static_cast<double>(size[1]) - ratio[1])
+        continue;
+      if (k == -size[2] && z - min[2] < static_cast<double>(size[2]) - ratio[2])
+        continue;
+      if (k ==  size[2] && max[2] - z < static_cast<double>(size[2]) - ratio[2])
+        continue;
+
+      // fractional coords of padding atom at
+      double atom_coords[3] = {i+x, j+y, k+z};
+
+      // absolute coords of padding atoms
+      pad_coords.push_back(dot(tcell, atom_coords));
+      pad_coords.push_back(dot(tcell+3, atom_coords));
+      pad_coords.push_back(dot(tcell+6, atom_coords));
+
+      // padding species code and image
+      pad_species.push_back(species[at]);
+      pad_image.push_back(at);
+
+    }
+  }
+
+  Npad = pad_image.size();
 }
+
 
