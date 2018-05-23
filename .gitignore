@@ -1,3 +1,4 @@
 *.o
 exec
 *.xyz
+.DS_Store

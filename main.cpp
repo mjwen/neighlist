@@ -1,9 +1,10 @@
 #include <vector>
 #include <cmath>
 #include <cstring>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <iostream>
+#include <fstream>
+//#include <stdlib.h>
+//#include <stdio.h>
 
 #include "neighbor_list.h"
 #include "padding.h"
@@ -13,37 +14,38 @@
 void write_extendxyz(int Natoms, double const * cell, double const * coords,
     int const * code)
 {
-  FILE *fp;
 
-  fp = fopen("coords.xyz", "w");
+  std::fstream fs;
+  fs.open("coords.xyz", std::fstream::out);
 
-
-  fprintf(fp, "%d\n",Natoms);
-  fprintf(fp, "Lattice=\"");
+  fs << Natoms << std::endl;
+  fs << "Lattice=\"";
   for (int i=0; i<9; i++) {
-    fprintf(fp, " %f",cell[i]);
+    fs << " " << cell[i];
   }
-  fprintf(fp, "\" Properties=\"species:S:1:pos:R:3 \"\n");
-
+  fs << "\" Properties=\"species:S:1:pos:R:3 \"" <<std::endl;
   for (int i=0; i<Natoms; i++) {
-    fprintf(fp, "%d %f %f %f\n",code[i], coords[i*3],coords[i*3+1],coords[i*3+2]);
+    fs << code[i] <<" "<< coords[i*3] <<" "<< coords[i*3+1]
+      <<" "<< coords[i*3+2] << std::endl;
   }
-  fclose(fp);
+
+  fs.close();
 }
 
 
 int main()
 {
-  double alat = 1.42;
-  double cutoff = 3.01;
+  double alat = 2.46;
+  double d = 3.35;
+  double cutoff = d+0.01;
   int pbc[3] = {1,1,1};
 
-  double cell[9] = {alat, 0, 0,   0.5*alat, sqrt(3)*0.5*alat, 0,   0, 0, 6};
+  double cell[9] = {alat, 0, 0,   0.5*alat, sqrt(3)*0.5*alat, 0,   0, 0, 2*d};
   double* cell1 = cell;
   double* cell2 = cell+3;
   double* cell3 = cell+6;
 
-  // initialize configurations
+  // initialize configurations (AB stacking graphite)
   int Natoms = 4;
   double coords[DIM*Natoms];
   int i=0;
@@ -96,28 +98,25 @@ int main()
     need_neigh[i] = 0;
   }
 
-
-
+  // create neighbor list
   NeighList* nl;
-
   nbl_initialize(&nl);
-
   nbl_build(nl, total, cutoff, coords_all, need_neigh);
 
+  // use get neigh
   int request = 0;
   int numnei;
   int * nei1atom;
   nbl_get_neigh(nl, request, &numnei, &nei1atom);
 
-  printf("request=%d, numnei=%d\n",request,numnei);
-  for (i=0; i<numnei; i++) {
-    printf("i=%d, neigh=%d\n",i, nei1atom[i]);
+  std::cout<<"get_neigh test"<<std::endl;
+  std::cout<<"request = " << request << ", numnei = " << numnei << std::endl;
+  for (int i=0; i<numnei; i++) {
+    std::cout<<"i = " << i << ", neigh = " << nei1atom[i] << std::endl;
   }
-
 
   // print to xyz file
   write_extendxyz(total, cell,  coords_all, code_all);
-
 
   // free neighborlist
   nbl_clean_all(&nl);
