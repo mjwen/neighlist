@@ -1,5 +1,5 @@
-CXX = g++
-CXXFLAGS = -std=c++11 -g -Wall			# include file should be added here using ``-I''
+CC = g++
+CFLAGS = -O2 -g -Wall # include file should be added here using ``-I''
 LDFLAGS =             # Extra flags to give to compilers when they are supposed
                       # to invoke the linker, ‘ld’, such as -L.
 LDLIBS = -lm          # Library flags or names given to compilers when they are supposed
@@ -11,11 +11,11 @@ OBJECTS = $(SOURCES:.cpp=.o)
 
 # linkding
 exec: $(OBJECTS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-.o:
-	$(CXX) $(CXXFLAGS) $< -o $@
-
+#.cpp.o:
+%.o: %.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 
 .PHONY: clean
