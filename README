@@ -1,0 +1,5 @@
+Building neighbor list of a group of atoms. If periodic boundary condition is
+used, it creates padding atoms and then build the neighbor lists.
+
+$ make
+$ ./exec
