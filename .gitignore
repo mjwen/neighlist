@@ -3,6 +3,7 @@
 neigh
 *.xyz
 .DS_Store
+examples/graphite
 python/.cache/
 python/neighlist.egg-info/
 python/neighlist/__init__.pyc
