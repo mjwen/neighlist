@@ -1,10 +1,49 @@
-Build neighbor list for a group of atoms with the support to create padding atoms
-when periodic boundary condition is used.
+# Neighbor List Building Library
 
-To make this library:
+This C++ library creates neighbor list for a group of atoms using the binning
+method. That is, dividing the domain into cells and only loop over neighboring
+cells of the target atom.
+
+## Features
+
+- C++ API and Python bindings
+- The `KIM` branch works seamlessly with the `KIM API`
+
+## Usage
+
+### C++
+
+The C++ shared library can be created by
+
+```shell
+$ cd neighlist
 $ make
+```
 
-See examples/graphite.cpp for a hint on how to use this.
+and then you can run an example by
 
+```shell
+$ cd examples
 $ make
 $ ./graphite
+```
+
+### Python
+
+To use the Python API, first do
+
+```shell
+$ cd neighlist/python
+$ pip install -e .    (or make install)
+```
+
+and then run an example
+
+```shell
+$ cd tests
+$ python test_graphite.py
+```
+
+
+
+Contact: Mingjian Wen (wenxx151@umn.edu)
