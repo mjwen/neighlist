@@ -35,7 +35,7 @@ void nbl_clean_content(NeighList * const nl)
 
 }
 
-void nbl_clean_all(NeighList ** const nl)
+void nbl_clean(NeighList ** const nl)
 {
   // free content
   nbl_clean_content(*nl);
@@ -48,7 +48,7 @@ void nbl_clean_all(NeighList ** const nl)
 }
 
 
-void nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
+int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
     double const * coords, int const * need_neigh)
 {
 
@@ -78,7 +78,8 @@ void nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
     size_total *= size[i];
   }
   if (size_total > 1000000000) {
-    MY_ERROR("Cell size too large. Check if you have partilces fly away.");
+    MY_WARNING("Cell size too large. Check if you have partilces fly away.");
+    return 1;
   }
 
   // assign atoms into cells
@@ -131,7 +132,8 @@ void nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
               stringStream <<"Collision of atoms "<<i+1<<" and "<<n+1<<". ";
               stringStream  <<"Their distance is "<<std::sqrt(rsq)<<"."<<std::endl;
               std::string my_str = stringStream.str();
-              MY_ERROR(my_str);
+              MY_WARNING(my_str);
+              return 1;
             }
             if (rsq < cutsq) {
               tmp_neigh.push_back(n);
@@ -152,6 +154,7 @@ void nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
   nl->neighborList = new int[total];
   std::memcpy(nl->neighborList, tmp_neigh.data(), sizeof(int)*total);
 
+  return 0;
 }
 
 
@@ -175,7 +178,7 @@ int nbl_get_neigh(NeighList const * const nl, int const request, int * const num
 }
 
 
-void nbl_set_padding(int const Natoms, double const cutoff, double const * cell,
+void nbl_create_padding(int const Natoms, double const cutoff, double const * cell,
     int const * PBC, double const * coords, int const * species,
     int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
     std::vector<int> & pad_image)

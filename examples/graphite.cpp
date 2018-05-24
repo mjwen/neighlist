@@ -15,14 +15,14 @@ void write_extendxyz(int Natoms, double const * cell, double const * coords,
 {
 
   std::fstream fs;
-  fs.open("coords.xyz", std::fstream::out);
+  fs.open("atoms.xyz", std::fstream::out);
 
   fs << Natoms << std::endl;
   fs << "Lattice=\"";
   for (int i=0; i<9; i++) {
     fs << " " << cell[i];
   }
-  fs << "\" Properties=\"species:S:1:pos:R:3 \"" <<std::endl;
+  fs << "\" Properties=species:S:1:pos:R:3" <<std::endl;
   for (int i=0; i<Natoms; i++) {
     fs << code[i] <<" "<< coords[i*3] <<" "<< coords[i*3+1]
       <<" "<< coords[i*3+2] << std::endl;
@@ -76,7 +76,7 @@ int main()
   std::vector<int> pad_image;
 
   /* create padding atoms */
-  nbl_set_padding(Natoms, cutoff, cell, pbc, coords, code, Npad, pad_coords,
+  nbl_create_padding(Natoms, cutoff, cell, pbc, coords, code, Npad, pad_coords,
       pad_code, pad_image);
 
   int total = Natoms + Npad;
@@ -119,7 +119,7 @@ int main()
   write_extendxyz(total, cell,  coords_all, code_all);
 
   // free neighborlist
-  nbl_clean_all(&nl);
+  nbl_clean(&nl);
 
   // free local data
   delete [] coords_all;

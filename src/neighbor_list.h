@@ -18,21 +18,23 @@ typedef struct
 
 void nbl_initialize(NeighList ** const nl);
 
-// free contents of NeighList, but not NeighList itseif
-void nbl_clean_content(NeighList * const nl);
+void nbl_create_padding(int const Natoms, double const cutoff, double const * cell,
+    int const * PBC, double const * coords, int const * species,
+    int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
+    std::vector<int> & pad_image);
 
-// free both the contents of NeighList and itseif
-void nbl_clean_all(NeighList ** const nl);
+int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
+    double const * coords, int const * need_neigh);
 
 int nbl_get_neigh(NeighList const * const nl, int const request, int * const numnei,
     int ** const nei1atom);
 
-void nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
-    double const * coords, int const * need_neigh);
+void nbl_clean(NeighList ** const nl);
 
-void nbl_set_padding(int const Natoms, double const cutoff, double const * cell,
-    int const * PBC, double const * coords, int const * species,
-    int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
-    std::vector<int> & pad_image);
+
+// helper funtion
+// free contents of NeighList, but not NeighList itseif
+void nbl_clean_content(NeighList * const nl);
+
 
 #endif

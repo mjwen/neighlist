@@ -3,3 +3,9 @@
 neigh
 *.xyz
 .DS_Store
+python/.cache/
+python/neighlist.egg-info/
+python/neighlist/__init__.pyc
+python/tests/error.pyc
+python/tests/__pycache__/
+
