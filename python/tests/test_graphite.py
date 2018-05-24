@@ -62,7 +62,7 @@ def test_main():
   # create padding atoms
   cutoff = d+0.01
   pbc = np.array([1,1,1])
-  out = nl.create_padding(cutoff, cell, pbc, contrib_coords, contrib_species)
+  out = nl.create_paddings(cutoff, cell, pbc, contrib_coords, contrib_species)
   pad_coords, pad_species, pad_image, error = out
   check_error(error, 'nl.create_padding')
 

@@ -44,33 +44,34 @@ PYBIND11_MODULE(neighlist, module) {
   );
 
   module.def("get_neigh",
-    [](NeighList const * const nl, int const atom_id) {
-      int numNeigh=0;  // in case nbl_get_neigh error out
-      int * nei1atom;
-      int error = nbl_get_neigh(nl, atom_id, &numNeigh, &nei1atom);
+    [](NeighList const * const nl, int const particleNumber) {
+      int numberOfNeighbors=0;  // in case nbl_get_neigh error out
+      int * neighOfAtom;
+      int error = nbl_get_neigh(nl, particleNumber, &numberOfNeighbors,
+          &neighOfAtom);
 
       // pack as a numpy array
-      auto neighOfAtom = py::array (py::buffer_info (
-        nei1atom,                              // data pointer
+      auto neighborsOfParticle = py::array (py::buffer_info (
+        neighOfAtom,                           // data pointer
         sizeof(int),                           // size of one element
         py::format_descriptor<int>::format(),  //Python struct-style format descriptor
         1,                                     // dimension
-        {numNeigh},                            // size of each dimension
+        {numberOfNeighbors},                            // size of each dimension
         {sizeof(int)}                          // stride of each dimension
       ));
 
       // short hand for the above
-      //auto neighOfAtom = py::array(numNeigh, nei1atom);
+      //auto neighOfAtom = py::array(numberOfNeighbors, neighborsOfParticle);
 
       py::tuple re(3);
-      re[0] = numNeigh;
+      re[0] = numberOfNeighbors;
       re[1] = neighOfAtom;
       re[2] = error;
       return re;
     },
     py::arg("NeighList"),
-    py::arg("atom_ID"),
-    "Return(numNeigh, neighOfAtom, error)"
+    py::arg("particle_number"),
+    "Return(number_of_neighbors, neighbors_of_particle, error)"
   );
 
 
@@ -97,9 +98,10 @@ PYBIND11_MODULE(neighlist, module) {
   );
 
 
-  module.def("create_padding",
+  module.def("create_paddings",
     [](double const cutoff, py::array_t<double> cell,
-      py::array_t<int> PBC, py::array_t<double> coords, py::array_t<int> species)
+      py::array_t<int> PBC, py::array_t<double> coords,
+      py::array_t<int> species)
     {
 
       int Natoms_1 = coords.size()/3;
@@ -118,14 +120,13 @@ PYBIND11_MODULE(neighlist, module) {
       auto coords2 = coords.data();
       auto species2 = species.data();
 
-      nbl_create_padding(Natoms, cutoff, cell2, PBC2, coords2, species2,
+      nbl_create_paddings(Natoms, cutoff, cell2, PBC2, coords2, species2,
           Npad, pad_coords, pad_species, pad_image);
 
     // pack as a 2D numpy array
     auto pad_coords_array = py::array (py::buffer_info (
       pad_coords.data(),
-      sizeof(double),
-      py::format_descriptor<double>::format(),
+      sizeof(double), py::format_descriptor<double>::format(),
       2,
       {Npad, 3},
       {sizeof(double)*3, sizeof(double)}
@@ -161,9 +162,10 @@ PYBIND11_MODULE(neighlist, module) {
     py::arg("cutoff"),
     py::arg("cell"),
     py::arg("PBC"),
-    py::arg("coords"),
-    py::arg("species"),
-    "Return(pad_coords, pad_species_code, pad_image, error)"
+    py::arg("coordinates"),
+    py::arg("species_code"),
+    "Return(coordinates_of_paddings, species_code_of_paddings, \
+        master_particle_of_paddings, error)"
   );
 
 }

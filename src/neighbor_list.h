@@ -8,7 +8,7 @@
 // neighborlist structure
 typedef struct
 {
-  int Natoms;
+  int numberOfParticles;
   double cutoff;
   int* Nneighbors;
   int* neighborList;
@@ -18,16 +18,18 @@ typedef struct
 
 void nbl_initialize(NeighList ** const nl);
 
-void nbl_create_padding(int const Natoms, double const cutoff, double const * cell,
-    int const * PBC, double const * coords, int const * species,
-    int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
-    std::vector<int> & pad_image);
+void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+    double const * cell, int const * PBC, double const * coordinates,
+    int const * speciesCode, int & numberOfPaddings,
+    std::vector<double> & coordinatesOfPaddings,
+    std::vector<int> & speciesCodeOfPaddings,
+    std::vector<int> & masterOfPaddings);
 
-int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
-    double const * coords, int const * need_neigh);
+int nbl_build(NeighList *const nl, int const numberOfParticles, double const cutoff,
+    double const * coordinates, int const * needNeighbors);
 
-int nbl_get_neigh(NeighList const * const nl, int const request, int * const numnei,
-    int ** const nei1atom);
+int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
+    int * const numberOfNeighbors, int ** const neighborsOfParticle);
 
 void nbl_clean(NeighList ** const nl);
 

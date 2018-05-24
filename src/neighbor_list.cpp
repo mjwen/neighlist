@@ -13,7 +13,7 @@
 void nbl_initialize(NeighList ** const nl)
 {
   *nl = new NeighList;
-  (*nl)->Natoms = -1;
+  (*nl)->numberOfParticles = -1;
   (*nl)->cutoff = -1.0;
   (*nl)->Nneighbors = 0;
   (*nl)->neighborList = 0;
@@ -26,7 +26,7 @@ void nbl_clean_content(NeighList * const nl)
     delete[] nl->Nneighbors;
     delete[] nl->neighborList;
     delete[] nl->beginIndex;
-    nl->Natoms = -1;
+    nl->numberOfParticles = -1;
     nl->cutoff = -1.0;
     nl->Nneighbors = 0;
     nl->neighborList = 0;
@@ -47,25 +47,23 @@ void nbl_clean(NeighList ** const nl)
   (*nl) = 0;
 }
 
-
-int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
-    double const * coords, int const * need_neigh)
+int nbl_build(NeighList *const nl, int const numberOfParticles, double const cutoff,
+    double const * coordinates, int const * needNeighbors)
 {
 
-
-  // find max and min extend of coords
+  // find max and min extend of coordinates
   double min[DIM];
   double max[DIM];
 
-  // init max and min of coords to that of the first atom
+  // init max and min of coordinates to that of the first atom
   for (int k=0; k<DIM; k++){
-    min[k] = coords[k];
-    max[k] = coords[k] + 1.0; // +1 to prevent max==min for 1D and 2D case
+    min[k] = coordinates[k];
+    max[k] = coordinates[k] + 1.0; // +1 to prevent max==min for 1D and 2D case
   }
-  for (int i=0; i<Natoms; i++){
+  for (int i=0; i<numberOfParticles; i++){
     for (int j=0; j<DIM; j++){
-      if (max[j] < coords[DIM*i+j]) max[j] = coords[DIM*i+j];
-      if (min[j] > coords[DIM*i+j]) min[j] = coords[DIM*i+j];
+      if (max[j] < coordinates[DIM*i+j]) max[j] = coordinates[DIM*i+j];
+      if (min[j] > coordinates[DIM*i+j]) min[j] = coordinates[DIM*i+j];
     }
   }
 
@@ -84,9 +82,9 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
 
   // assign atoms into cells
   std::vector<std::vector<int> > cells(size_total);
-  for (int i=0; i<Natoms; i++){
+  for (int i=0; i<numberOfParticles; i++){
     int index[DIM];
-    coords_to_index(&coords[DIM*i], size, max, min, index);
+    coords_to_index(&coordinates[DIM*i], size, max, min, index);
     int idx = index[0] + index[1]*size[0] + index[2]*size[0]*size[1];
     cells[idx].push_back(i);
   }
@@ -96,8 +94,8 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
 
   // free previous neigh content first
   nbl_clean_content(nl);
-  nl->Nneighbors = new int[Natoms];
-  nl->beginIndex = new int[Natoms];
+  nl->Nneighbors = new int[numberOfParticles];
+  nl->beginIndex = new int[numberOfParticles];
 
   // temporary neigh container
   std::vector<int> tmp_neigh;
@@ -105,11 +103,11 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
   double cutsq = cutoff*cutoff;
   int total = 0;
 
-  for (int i=0; i<Natoms; i++) {
+  for (int i=0; i<numberOfParticles; i++) {
     int num_neigh = 0;
-    if (need_neigh[i]) {
+    if (needNeighbors[i]) {
       int index[DIM];
-      coords_to_index(&coords[DIM*i], size, max, min, index);
+      coords_to_index(&coordinates[DIM*i], size, max, min, index);
 
       // loop over neighborling cells and the cell atom i resides
       for (int ii=std::max(0, index[0]-1); ii<=std::min(index[0]+1, size[0]-1); ii++)
@@ -124,7 +122,7 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
             double rsq = 0.0;
 
             for (int k=0; k<DIM; k++) {
-              double del = coords[DIM*n+k] - coords[DIM*i+k];
+              double del = coordinates[DIM*n+k] - coordinates[DIM*i+k];
               rsq += del*del;
             }
             if (rsq < TOL) {
@@ -149,7 +147,7 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
     total += num_neigh;
   }
 
-  nl->Natoms = Natoms;
+  nl->numberOfParticles = numberOfParticles;
   nl->cutoff = cutoff;
   nl->neighborList = new int[total];
   std::memcpy(nl->neighborList, tmp_neigh.data(), sizeof(int)*total);
@@ -158,43 +156,45 @@ int nbl_build(NeighList *const nl, int const Natoms, double const cutoff,
 }
 
 
-int nbl_get_neigh(NeighList const * const nl, int const request, int * const numnei,
-    int ** const nei1atom)
+int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
+    int * const numberOfNeighbors, int ** const neighborsOfParticle)
 {
 
-  if ((request >= nl->Natoms) || (request < 0)) {
+  if ((particleNumber >= nl->numberOfParticles) || (particleNumber < 0)) {
     MY_WARNING("atom ID out of bound");
     return 1;
   }
 
   // number of neighbors
-  *numnei = nl->Nneighbors[request];
+  *numberOfNeighbors = nl->Nneighbors[particleNumber];
 
   // neighbor list starting point
-  int idx = nl->beginIndex[request];
-  *nei1atom = nl->neighborList + idx;
+  int idx = nl->beginIndex[particleNumber];
+  *neighborsOfParticle = nl->neighborList + idx;
 
   return 0;
 }
 
 
-void nbl_create_padding(int const Natoms, double const cutoff, double const * cell,
-    int const * PBC, double const * coords, int const * species,
-    int & Npad, std::vector<double> & pad_coords, std::vector<int> & pad_species,
-    std::vector<int> & pad_image)
+void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+    double const * cell, int const * PBC, double const * coordinates,
+    int const * speciesCode, int & numberOfPaddings,
+    std::vector<double> & coordinatesOfPaddings,
+    std::vector<int> & speciesCodeOfPaddings,
+    std::vector<int> & masterOfPaddings)
 {
 
-  // transform coords into fractional coords
+  // transform coordinates into fractional coordinates
   double tcell[9];
   double fcell[9];
   transpose(cell, tcell);
   inverse(tcell, fcell);
 
-  double frac_coords[DIM*Natoms];
+  double frac_coords[DIM*numberOfParticles];
   double min[DIM] = {1e10, 1e10, 1e10};
   double max[DIM] = {-1e10, -1e10, -1e10};
-  for (int i=0; i<Natoms; i++) {
-    const double* atom_coords = coords + (DIM*i);
+  for (int i=0; i<numberOfParticles; i++) {
+    const double* atom_coords = coordinates + (DIM*i);
     double x = dot(fcell, atom_coords);
     double y = dot(fcell+3, atom_coords);
     double z = dot(fcell+6, atom_coords);
@@ -250,7 +250,7 @@ void nbl_create_padding(int const Natoms, double const cutoff, double const * ce
     if (PBC[1]==0 && j != 0) continue;
     if (PBC[2]==0 && k != 0) continue;
 
-    for (int at=0; at<Natoms; at++) {
+    for (int at=0; at<numberOfParticles; at++) {
       double x = frac_coords[DIM*at+0];
       double y = frac_coords[DIM*at+1];
       double z = frac_coords[DIM*at+2];
@@ -270,22 +270,22 @@ void nbl_create_padding(int const Natoms, double const cutoff, double const * ce
       if (k ==  size[2] && max[2] - z < static_cast<double>(size[2]) - ratio[2])
         continue;
 
-      // fractional coords of padding atom at
+      // fractional coordinates of padding atom at
       double atom_coords[3] = {i+x, j+y, k+z};
 
-      // absolute coords of padding atoms
-      pad_coords.push_back(dot(tcell, atom_coords));
-      pad_coords.push_back(dot(tcell+3, atom_coords));
-      pad_coords.push_back(dot(tcell+6, atom_coords));
+      // absolute coordinates of padding atoms
+      coordinatesOfPaddings.push_back(dot(tcell, atom_coords));
+      coordinatesOfPaddings.push_back(dot(tcell+3, atom_coords));
+      coordinatesOfPaddings.push_back(dot(tcell+6, atom_coords));
 
-      // padding species code and image
-      pad_species.push_back(species[at]);
-      pad_image.push_back(at);
+      // padding speciesCode code and image
+      speciesCodeOfPaddings.push_back(speciesCode[at]);
+      masterOfPaddings.push_back(at);
 
     }
   }
 
-  Npad = pad_image.size();
+  numberOfPaddings = masterOfPaddings.size();
 }
 
 
