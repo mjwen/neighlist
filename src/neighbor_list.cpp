@@ -157,7 +157,7 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
 
 
 int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
-    int * const numberOfNeighbors, int ** const neighborsOfParticle)
+    int * const numberOfNeighbors, int const ** const neighborsOfParticle)
 {
 
   if ((particleNumber >= nl->numberOfParticles) || (particleNumber < 0)) {

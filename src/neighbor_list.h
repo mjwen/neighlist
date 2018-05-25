@@ -29,7 +29,7 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
     double const * coordinates, int const * needNeighbors);
 
 int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
-    int * const numberOfNeighbors, int ** const neighborsOfParticle);
+    int * const numberOfNeighbors, int const ** const neighborsOfParticle);
 
 void nbl_clean(NeighList ** const nl);
 
