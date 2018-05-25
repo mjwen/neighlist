@@ -30,14 +30,14 @@ $ ./graphite
 
 ### Python
 
-To use the Python API, first do
+To use the Python binding, first do
 
 ```shell
 $ cd neighlist/python
-$ pip install -e .    (or make install)
+$ pip install -e . 
 ```
 
-and then run an example
+and then take a look at the example
 
 ```shell
 $ cd tests
