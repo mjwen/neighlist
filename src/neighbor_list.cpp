@@ -157,12 +157,42 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
 
 
 int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
-    int * const numberOfNeighbors, int ** const neighborsOfParticle)
+    int * const numberOfNeighbors, int const ** const neighborsOfParticle)
 {
 
   if ((particleNumber >= nl->numberOfParticles) || (particleNumber < 0)) {
     MY_WARNING("atom ID out of bound");
     return 1;
+  }
+
+  // number of neighbors
+  *numberOfNeighbors = nl->Nneighbors[particleNumber];
+
+  // neighbor list starting point
+  int idx = nl->beginIndex[particleNumber];
+  *neighborsOfParticle = nl->neighborList + idx;
+
+  return 0;
+}
+
+
+int nbl_get_neigh_kim(void const * const dataObject, int const numberOfCutoffs,
+    double const * const cutoffs, int const neighborListIndex,
+    int const particleNumber, int * const numberOfNeighbors,
+    int const ** const neighborsOfParticle)
+{
+  int error = 1;
+  NeighList * nl = (NeighList*) dataObject;
+  int numberOfParticles = nl->numberOfParticles;
+
+  if ((numberOfCutoffs != 1) || (cutoffs[0] > nl->cutoff)) return error;
+
+  if (neighborListIndex != 0) return error;
+
+  // invalid id
+  if ((particleNumber >= numberOfParticles) || (particleNumber < 0)) {
+    MY_WARNING("Invalid part ID in nbl_get_neigh");
+    return error;
   }
 
   // number of neighbors

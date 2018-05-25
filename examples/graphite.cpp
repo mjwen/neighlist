@@ -109,14 +109,14 @@ int main()
   // use get neigh
   int particleNumber = 0;
   int numberOfNeighbors;
-  int * nei1atom;
-  nbl_get_neigh(nl, particleNumber, &numberOfNeighbors, &nei1atom);
+  int const * neighborsOfParticle;
+  nbl_get_neigh(nl, particleNumber, &numberOfNeighbors, &neighborsOfParticle);
 
   std::cout<<"get_neigh test"<<std::endl;
   std::cout<<"particleNumber = " << particleNumber;
   std::cout<< ", numberOfNeighbors = " << numberOfNeighbors << std::endl;
   for (int i=0; i<numberOfNeighbors; i++) {
-    std::cout<<"i = " << i << ", neigh = " << nei1atom[i] << std::endl;
+    std::cout<<"i = " << i << ", neigh = " << neighborsOfParticle[i] << std::endl;
   }
 
   // print to xyz file
