@@ -37,22 +37,6 @@ def get_includes():
   pybind11_inc = [get_pybind11_includes(), get_pybind11_includes(user=True)]
   return pybind11_inc + neighlist_inc
 
-
-def get_version(fname='./neighlist/__init__.py'):
-  with open(fname) as fin:
-    for line in fin:
-      line = line.strip()
-      if '__version__' in line:
-        v = line.split('=')[1]
-        # stripe white space, and ' or " in string
-        if "'" in v:
-          version = v.strip("' ")
-        elif '"' in v:
-          version = v.strip('" ')
-        break
-  return version
-
-
 def get_extension(module_name, sources):
   return Extension(
     module_name,
@@ -63,14 +47,13 @@ def get_extension(module_name, sources):
   )
 
 neighlist = get_extension(
-  'neighlist.neighlist',
-  ['../src/neighbor_list.cpp', './neighlist/neighbor_list_bind.cpp']
+  'neighlist',
+  ['../src/neighbor_list.cpp', 'neighbor_list_bind.cpp']
 )
 
 setup(
   name = 'neighlist',
-  version = get_version(),
-  packages = ['neighlist'],
+  version = '1.0.0',
   ext_modules = [neighlist],
   install_requires = ['pybind11>=2.2', 'numpy'],
 
@@ -79,7 +62,6 @@ setup(
   author_email = 'wenxx151[at]umn.edu',
   url = 'https://github.com/mjwen/neighbor_list',
   description = 'Python binding to the neighbor list building library',
-
-  zip_safe = False,
+  #zip_safe = False,
 )
 
