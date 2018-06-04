@@ -12,5 +12,5 @@ clean:
 	python setup.py clean
 clean_all:
 	rm -rf build/ dist/ *.so .cache/ \
-  neighlist/*.pyc neighlist/*.so neighlist.egg-info/ \
+  neighlist.egg-info/ \
   tests/*.pyc tests/*.xyz tests/__pycache__
