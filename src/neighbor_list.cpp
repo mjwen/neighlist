@@ -206,7 +206,7 @@ int nbl_get_neigh_kim(void const * const dataObject, int const numberOfCutoffs,
 }
 
 
-void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+int nbl_create_paddings(int const numberOfParticles, double const cutoff,
     double const * cell, int const * PBC, double const * coordinates,
     int const * speciesCode, int & numberOfPaddings,
     std::vector<double> & coordinatesOfPaddings,
@@ -218,7 +218,8 @@ void nbl_create_paddings(int const numberOfParticles, double const cutoff,
   double tcell[9];
   double fcell[9];
   transpose(cell, tcell);
-  inverse(tcell, fcell);
+  int error = inverse(tcell, fcell);
+  if (error) return error;
 
   double frac_coords[DIM*numberOfParticles];
   double min[DIM] = {1e10, 1e10, 1e10};
@@ -316,6 +317,8 @@ void nbl_create_paddings(int const numberOfParticles, double const cutoff,
   }
 
   numberOfPaddings = masterOfPaddings.size();
+
+  return 0;
 }
 
 

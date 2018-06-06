@@ -68,7 +68,7 @@ inline void transpose(double const * mat, double * const trans)
 }
 
 //inverse of a 3 by 3 matrix
-inline void inverse(double const * mat, double * const inv)
+inline int inverse(double const * mat, double * const inv)
 {
   inv[0] = det2(mat[4], mat[5], mat[7], mat[8]);
   inv[1] = det2(mat[2], mat[1], mat[8], mat[7]);
@@ -82,11 +82,13 @@ inline void inverse(double const * mat, double * const inv)
 
   double dd = det(mat);
   if(std::abs(dd) < SMALL) {
-    MY_ERROR("Cannot invert cell matrix. Determinant is 0.");
+    MY_WARNING("Cannot invert cell matrix. Determinant is 0.");
+    return 1;
   }
   for (int i=0; i<9; i++) {
     inv[i] /= dd;
   }
+  return 0;
 }
 
 inline void coords_to_index(double const * x, int const * size, double const * max,

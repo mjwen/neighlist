@@ -18,7 +18,7 @@ typedef struct
 
 void nbl_initialize(NeighList ** const nl);
 
-void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+int nbl_create_paddings(int const numberOfParticles, double const cutoff,
     double const * cell, int const * PBC, double const * coordinates,
     int const * speciesCode, int & numberOfPaddings,
     std::vector<double> & coordinatesOfPaddings,

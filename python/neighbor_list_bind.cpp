@@ -129,8 +129,8 @@ PYBIND11_MODULE(neighlist, module) {
       auto coords2 = coords.data();
       auto species2 = species.data();
 
-      nbl_create_paddings(Natoms, cutoff, cell2, PBC2, coords2, species2,
-          Npad, pad_coords, pad_species, pad_image);
+      error = error || nbl_create_paddings(Natoms, cutoff, cell2, PBC2, coords2,
+          species2, Npad, pad_coords, pad_species, pad_image);
 
     // pack as a 2D numpy array
     auto pad_coords_array = py::array (py::buffer_info (
