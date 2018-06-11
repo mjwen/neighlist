@@ -62,7 +62,6 @@ setup(
   author_email = 'wenxx151[at]umn.edu',
   url = 'https://github.com/mjwen/neighbor_list',
   description = 'Python binding to the neighbor list building library',
-
-  zip_safe = False,
+  #zip_safe = False,
 )
 

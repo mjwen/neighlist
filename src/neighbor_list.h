@@ -18,7 +18,7 @@ typedef struct
 
 void nbl_initialize(NeighList ** const nl);
 
-void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+int nbl_create_paddings(int const numberOfParticles, double const cutoff,
     double const * cell, int const * PBC, double const * coordinates,
     int const * speciesCode, int & numberOfPaddings,
     std::vector<double> & coordinatesOfPaddings,
@@ -33,10 +33,11 @@ int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
 
 void nbl_clean(NeighList ** const nl);
 
-
-// helper funtion
-// free contents of NeighList, but not NeighList itseif
-void nbl_clean_content(NeighList * const nl);
+// this is compatible with the kim-api-v2 requirement for get_neigh function
+int nbl_get_neigh_kim(void const * const nl, int const numberOfCutoffs,
+    double const * const cutoffs, int const neighborListIndex,
+    int const particleNumber, int * const numberOfNeighbors,
+    int const ** const neighborsOfParticle);
 
 
 #endif

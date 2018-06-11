@@ -176,7 +176,37 @@ int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
 }
 
 
-void nbl_create_paddings(int const numberOfParticles, double const cutoff,
+int nbl_get_neigh_kim(void const * const dataObject, int const numberOfCutoffs,
+    double const * const cutoffs, int const neighborListIndex,
+    int const particleNumber, int * const numberOfNeighbors,
+    int const ** const neighborsOfParticle)
+{
+  int error = 1;
+  NeighList * nl = (NeighList*) dataObject;
+  int numberOfParticles = nl->numberOfParticles;
+
+  if ((numberOfCutoffs != 1) || (cutoffs[0] > nl->cutoff)) return error;
+
+  if (neighborListIndex != 0) return error;
+
+  // invalid id
+  if ((particleNumber >= numberOfParticles) || (particleNumber < 0)) {
+    MY_WARNING("Invalid part ID in nbl_get_neigh");
+    return error;
+  }
+
+  // number of neighbors
+  *numberOfNeighbors = nl->Nneighbors[particleNumber];
+
+  // neighbor list starting point
+  int idx = nl->beginIndex[particleNumber];
+  *neighborsOfParticle = nl->neighborList + idx;
+
+  return 0;
+}
+
+
+int nbl_create_paddings(int const numberOfParticles, double const cutoff,
     double const * cell, int const * PBC, double const * coordinates,
     int const * speciesCode, int & numberOfPaddings,
     std::vector<double> & coordinatesOfPaddings,
@@ -188,7 +218,8 @@ void nbl_create_paddings(int const numberOfParticles, double const cutoff,
   double tcell[9];
   double fcell[9];
   transpose(cell, tcell);
-  inverse(tcell, fcell);
+  int error = inverse(tcell, fcell);
+  if (error) return error;
 
   double frac_coords[DIM*numberOfParticles];
   double min[DIM] = {1e10, 1e10, 1e10};
@@ -286,6 +317,8 @@ void nbl_create_paddings(int const numberOfParticles, double const cutoff,
   }
 
   numberOfPaddings = masterOfPaddings.size();
+
+  return 0;
 }
 
 
