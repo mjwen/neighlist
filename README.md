@@ -1,49 +1,50 @@
-# Neighbor List Building Library
+# Neighbor List Building Library 
 
-This C++ library creates neighbor list for a group of atoms using the binning
-method. That is, dividing the domain into cells and only loop over neighboring
-cells of the target atom.
+This C++ library creates neighbor list for a group of atoms using the binning method. That is, dividing the domain into cells and only loop over neighboring cells of the target atom. 
 
 ## Features
 
+- Binning method to create neighbor list
 - C++ API and Python bindings
-- The `KIM` branch works seamlessly with the `KIM API`
+- Works seamlessly with the `KIM API` 
 
-## Usage
+## Installation
 
 ### C++
 
-The C++ shared library can be created by
+The C++ shared library can be created by 
 
-```shell
+```
+$ git clone https://github.com/mjwen/neighlist.git
 $ cd neighlist
-$ make
+$ make 
 ```
 
-and then you can run an example by
+and then an example can be run by
 
-```shell
+```
 $ cd examples
-$ make
+$ make 
 $ ./graphite
 ```
 
-### Python
+### Python 
 
-To use the Python binding, first do
+To use the Python API (if you want to use the ASE [kimcalculator](https://github.com/mjwen/kimcalculator), this is needed), install by
 
-```shell
+```
+$ git clone https://github.com/mjwen/neighlist.git
 $ cd neighlist/python
-$ pip install -e . 
+$ pip install -e .
 ```
 
-and then take a look at the example
+Then you can run an example:
 
-```shell
+```
 $ cd tests
 $ python test_graphite.py
 ```
 
+## Contact
 
-
-Contact: Mingjian Wen (wenxx151@umn.edu)
+ Mingjian Wen (wenxx151@umn.edu)
