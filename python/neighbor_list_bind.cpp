@@ -12,10 +12,10 @@
     exit(1);                                                          \
   }
 
-#define MY_WARNING(message)                                              \
-  {                                                                      \
-    std::cout << "* Error (Neighbor List) : \"" << message << "\" : "    \
-              << __LINE__ << ":" << __FILE__ << std::endl;               \
+#define MY_WARNING(message)                                            \
+  {                                                                    \
+    std::cout << "* Error (Neighbor List) : \"" << message << "\" : "  \
+              << __LINE__ << ":" << __FILE__ << std::endl;             \
   }
 
 
@@ -44,8 +44,8 @@ PYBIND11_MODULE(neighlist, module) {
   );
 
   module.def("build",
-    [](NeighList *const nl,  double const cutoff,
-      py::array_t<double> coords, py::array_t<int> need_neigh)
+    [](NeighList *const nl, py::array_t<double> coords, double const influenceDistance,
+      py::array_t<double> cutoffs, py::array_t<int> need_neigh)
     {
       int Natoms_1 = coords.size()/3;
       int Natoms_2 = need_neigh.size();
@@ -53,25 +53,32 @@ PYBIND11_MODULE(neighlist, module) {
       if (error) MY_WARNING("\"coords\" size and \"need_neigh\" size does not match.");
 
       int Natoms = Natoms_1 <= Natoms_2 ? Natoms_1 : Natoms_2;
-      auto c = coords.data();
-      auto nn = need_neigh.data();
-      error = error || nbl_build(nl, Natoms, cutoff, c, nn);
+      int numberOfCutoffs = cutoffs.size();
+      double const * pcutoffs = cutoffs.data();
+      double const * c = coords.data();
+      int const * nn = need_neigh.data();
+      error = error || nbl_build(nl, Natoms, c, influenceDistance, numberOfCutoffs,
+          pcutoffs, nn);
 
     return error;
     },
     py::arg("NeighList"),
-    py::arg("cutoff"),
-    py::arg("coords"),
-    py::arg("need_neigh")
+    py::arg("coords").noconvert(),
+    py::arg("influenceDistance"),
+    py::arg("cutoffs").noconvert(),
+    py::arg("need_neigh").noconvert()
   );
 
 
   module.def("get_neigh",
-    [](NeighList const * const nl, int const particleNumber) {
-      int numberOfNeighbors=0;  // in case nbl_get_neigh error out
+    [](NeighList const * const nl, py::array_t<double> cutoffs,
+    int const neighborListIndex, int const particleNumber) {
+      int numberOfNeighbors = 0;
+      double const * pcutoffs = cutoffs.data();
+      int numberOfCutoffs = cutoffs.size();
       int const * neighOfAtom;
-      int error = nbl_get_neigh(nl, particleNumber, &numberOfNeighbors,
-          &neighOfAtom);
+      int error = nbl_get_neigh(nl, numberOfCutoffs, pcutoffs, neighborListIndex,
+          particleNumber, &numberOfNeighbors, &neighOfAtom);
 
       // pack as a numpy array
       auto neighborsOfParticle = py::array (py::buffer_info (
@@ -83,7 +90,7 @@ PYBIND11_MODULE(neighlist, module) {
         {sizeof(int)}                          // stride of each dimension
       ));
 
-      // short hand for the above
+      // shorthand for the above
       //auto neighOfAtom = py::array(numberOfNeighbors, neighborsOfParticle);
 
       py::tuple re(3);
@@ -93,6 +100,8 @@ PYBIND11_MODULE(neighlist, module) {
       return re;
     },
     py::arg("NeighList"),
+    py::arg("cutoffs").noconvert(),
+    py::arg("neighborListIndex"),
     py::arg("particle_number"),
     "Return(number_of_neighbors, neighbors_of_particle, error)"
   );
@@ -105,12 +114,13 @@ PYBIND11_MODULE(neighlist, module) {
       // so cast the function pointer to it, and we need to cast back when
       // using it
       typedef void const type;
-      return (type*) &nbl_get_neigh_kim;
+      return (type*) &nbl_get_neigh;
     }
   );
 
+
   module.def("create_paddings",
-    [](double const cutoff, py::array_t<double> cell,
+    [](double const influenceDistance, py::array_t<double> cell,
       py::array_t<int> PBC, py::array_t<double> coords, py::array_t<int> species)
     {
 
@@ -125,13 +135,13 @@ PYBIND11_MODULE(neighlist, module) {
       std::vector<int> pad_species;
       std::vector<int> pad_image;
 
-      auto cell2 = cell.data();
-      auto PBC2 = PBC.data();
-      auto coords2 = coords.data();
-      auto species2 = species.data();
+      double const * cell2 = cell.data();
+      int const * PBC2 = PBC.data();
+      double const * coords2 = coords.data();
+      int const * species2 = species.data();
 
-      error = error || nbl_create_paddings(Natoms, cutoff, cell2, PBC2, coords2,
-          species2, Npad, pad_coords, pad_species, pad_image);
+      error = error || nbl_create_paddings(Natoms, influenceDistance, cell2, PBC2,
+          coords2, species2, Npad, pad_coords, pad_species, pad_image);
 
     // pack as a 2D numpy array
     auto pad_coords_array = py::array (py::buffer_info (
@@ -170,11 +180,11 @@ PYBIND11_MODULE(neighlist, module) {
       re[3] = error;
       return re;
     },
-    py::arg("cutoff"),
-    py::arg("cell"),
-    py::arg("PBC"),
-    py::arg("coordinates"),
-    py::arg("species_code"),
+    py::arg("influenceDistance"),
+    py::arg("cell").noconvert(),
+    py::arg("PBC").noconvert(),
+    py::arg("coordinates").noconvert(),
+    py::arg("species_code").noconvert(),
     "Return(coordinates_of_paddings, species_code_of_paddings, \
         master_particle_of_paddings, error)"
   );
