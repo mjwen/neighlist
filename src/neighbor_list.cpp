@@ -10,45 +10,68 @@
 #define DIM 3
 #define TOL 1.0e-10
 
+void nbl_clean_content(NeighList * const nl)
+{
+  if (nl != NULL) {
+    for (int i=0; i<nl->numberOfNeighborLists; i++) {
+      NeighListOne * cnl = &(nl->lists[i]);
+      delete[] cnl->Nneighbors;
+      delete[] cnl->neighborList;
+      delete[] cnl->beginIndex;
+      cnl->numberOfParticles = 0;
+      cnl->cutoff = 0.0;
+      cnl->Nneighbors = NULL;
+      cnl->neighborList = NULL;
+      cnl->beginIndex = NULL;
+    }
+    delete[] nl->lists;
+    nl->lists = NULL;
+    nl->numberOfNeighborLists = 0;
+  }
+}
+
+void nbl_allocate_memory(NeighList * const nl, int const numberOfCutoffs,
+    int const numberOfParticles)
+{
+  nl->lists = new NeighListOne[numberOfCutoffs];
+  nl->numberOfNeighborLists = numberOfCutoffs;
+  for (int i=0; i<numberOfCutoffs; i++) {
+    NeighListOne * cnl = &(nl->lists[i]);
+    cnl->numberOfParticles = 0;
+    cnl->cutoff = 0.0;
+    cnl->Nneighbors = new int[numberOfParticles];
+    cnl->neighborList = NULL;
+    cnl->beginIndex = new int[numberOfParticles];
+  }
+}
+
 void nbl_initialize(NeighList ** const nl)
 {
   *nl = new NeighList;
-  (*nl)->numberOfParticles = -1;
-  (*nl)->cutoff = -1.0;
-  (*nl)->Nneighbors = 0;
-  (*nl)->neighborList = 0;
-  (*nl)->beginIndex = 0;
+  (*nl)->numberOfNeighborLists = 0;
+  (*nl)->lists = NULL;
+//
+//  (*nl)->numberOfParticles = -1;
+//  (*nl)->cutoff = -1.0;
+//  (*nl)->Nneighbors = 0;
+//  (*nl)->neighborList = 0;
+//  (*nl)->beginIndex = 0;
 }
 
-void nbl_clean_content(NeighList * const nl)
-{
-  if (nl != 0) {
-    delete[] nl->Nneighbors;
-    delete[] nl->neighborList;
-    delete[] nl->beginIndex;
-    nl->numberOfParticles = -1;
-    nl->cutoff = -1.0;
-    nl->Nneighbors = 0;
-    nl->neighborList = 0;
-    nl->beginIndex = 0;
-  }
-
-}
 
 void nbl_clean(NeighList ** const nl)
 {
-  // free content
   nbl_clean_content(*nl);
 
-  // free NeighList
   delete (*nl);
 
   // nullify pointer
-  (*nl) = 0;
+  (*nl) = NULL;
 }
 
-int nbl_build(NeighList *const nl, int const numberOfParticles, double const cutoff,
-    double const * coordinates, int const * needNeighbors)
+int nbl_build(NeighList *const nl, int const numberOfParticles,
+    double const * coordinates, double const influenceDistance,
+    int const numberOfCutoffs, double const * cutoffs, int const * needNeighbors)
 {
 
   // find max and min extend of coordinates
@@ -71,7 +94,7 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
   int size_total = 1;
   int size[DIM];
   for (int i=0; i<DIM; i++){
-    size[i] = static_cast<int> ((max[i]-min[i])/cutoff);
+    size[i] = static_cast<int> ((max[i]-min[i])/influenceDistance);
     size[i] = size[i] <= 0 ? 1 : size[i];
     size_total *= size[i];
   }
@@ -92,19 +115,30 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
 
   // create neighbors
 
-  // free previous neigh content first
+  // free previous neigh content and then create new
   nbl_clean_content(nl);
-  nl->Nneighbors = new int[numberOfParticles];
-  nl->beginIndex = new int[numberOfParticles];
+  nbl_allocate_memory(nl, numberOfCutoffs, numberOfParticles);
+
+  double * cutsqs = new double[numberOfCutoffs];
+  for(int i=0; i<numberOfCutoffs; i++) {
+    cutsqs[i] = cutoffs[i]*cutoffs[i];
+  }
 
   // temporary neigh container
-  std::vector<int> tmp_neigh;
+   std::vector<int> * tmp_neigh = new std::vector<int> [numberOfCutoffs];
+  int * total = new int[numberOfCutoffs];
+  int * num_neigh = new int[numberOfCutoffs];
+  for(int k=0; k<numberOfCutoffs; k++) {
+    total[k] = 0;
+  }
 
-  double cutsq = cutoff*cutoff;
-  int total = 0;
 
   for (int i=0; i<numberOfParticles; i++) {
-    int num_neigh = 0;
+
+    for(int k=0; k<numberOfCutoffs; k++) {
+      num_neigh[k] = 0;
+    }
+
     if (needNeighbors[i]) {
       int index[DIM];
       coords_to_index(&coordinates[DIM*i], size, max, min, index);
@@ -133,74 +167,86 @@ int nbl_build(NeighList *const nl, int const numberOfParticles, double const cut
               MY_WARNING(my_str);
               return 1;
             }
-            if (rsq < cutsq) {
-              tmp_neigh.push_back(n);
-              num_neigh++;
+            for (int k=0; k<numberOfCutoffs; k++) {
+              if (rsq < cutsqs[k]) {
+                tmp_neigh[k].push_back(n);
+                num_neigh[k]++;
+              }
             }
           }
         }
       }
     }
 
-    nl->Nneighbors[i] = num_neigh;
-    nl->beginIndex[i] = total;
-    total += num_neigh;
+    for (int k=0; k<numberOfCutoffs; k++) {
+      nl->lists[k].Nneighbors[i] = num_neigh[k];
+      nl->lists[k].beginIndex[i] = total[k];
+      total[k] += num_neigh[k];
+    }
   }
 
-  nl->numberOfParticles = numberOfParticles;
-  nl->cutoff = cutoff;
-  nl->neighborList = new int[total];
-  std::memcpy(nl->neighborList, tmp_neigh.data(), sizeof(int)*total);
+  for (int k=0; k<numberOfCutoffs; k++) {
+    nl->lists[k].numberOfParticles = numberOfParticles;
+    nl->lists[k].cutoff = cutoffs[k];
+    nl->lists[k].neighborList = new int[total[k]];
+    std::memcpy(nl->lists[k].neighborList, tmp_neigh[k].data(), sizeof(int)*total[k]);
+  }
+
+  delete[] cutsqs;
+  delete[] tmp_neigh;
+  delete[] num_neigh;
+  delete[] total;
 
   return 0;
 }
 
+//
+//int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
+//    int * const numberOfNeighbors, int const ** const neighborsOfParticle)
+//{
+//
+//  if ((particleNumber >= nl->numberOfParticles) || (particleNumber < 0)) {
+//    MY_WARNING("atom ID out of bound");
+//    return 1;
+//  }
+//
+//  // number of neighbors
+//  *numberOfNeighbors = nl->Nneighbors[particleNumber];
+//
+//  // neighbor list starting point
+//  int idx = nl->beginIndex[particleNumber];
+//  *neighborsOfParticle = nl->neighborList + idx;
+//
+//  return 0;
+//}
 
-int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
-    int * const numberOfNeighbors, int const ** const neighborsOfParticle)
-{
 
-  if ((particleNumber >= nl->numberOfParticles) || (particleNumber < 0)) {
-    MY_WARNING("atom ID out of bound");
-    return 1;
-  }
-
-  // number of neighbors
-  *numberOfNeighbors = nl->Nneighbors[particleNumber];
-
-  // neighbor list starting point
-  int idx = nl->beginIndex[particleNumber];
-  *neighborsOfParticle = nl->neighborList + idx;
-
-  return 0;
-}
-
-
-int nbl_get_neigh_kim(void const * const dataObject, int const numberOfCutoffs,
+int nbl_get_neigh(void const * const dataObject, int const numberOfCutoffs,
     double const * const cutoffs, int const neighborListIndex,
     int const particleNumber, int * const numberOfNeighbors,
     int const ** const neighborsOfParticle)
 {
   int error = 1;
   NeighList * nl = (NeighList*) dataObject;
-  int numberOfParticles = nl->numberOfParticles;
 
-  if ((numberOfCutoffs != 1) || (cutoffs[0] > nl->cutoff)) return error;
+  if (neighborListIndex >= nl->numberOfNeighborLists) return error;
+  NeighListOne * cnl = &(nl->lists[neighborListIndex]);
 
-  if (neighborListIndex != 0) return error;
+  if (cutoffs[neighborListIndex] > cnl->cutoff + TOL) return error;
 
   // invalid id
+  int numberOfParticles = cnl->numberOfParticles;
   if ((particleNumber >= numberOfParticles) || (particleNumber < 0)) {
     MY_WARNING("Invalid part ID in nbl_get_neigh");
     return error;
   }
 
   // number of neighbors
-  *numberOfNeighbors = nl->Nneighbors[particleNumber];
+  *numberOfNeighbors = cnl->Nneighbors[particleNumber];
 
   // neighbor list starting point
-  int idx = nl->beginIndex[particleNumber];
-  *neighborsOfParticle = nl->neighborList + idx;
+  int idx = cnl->beginIndex[particleNumber];
+  *neighborsOfParticle = cnl->neighborList + idx;
 
   return 0;
 }

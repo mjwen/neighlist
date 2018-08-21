@@ -13,6 +13,13 @@ typedef struct
   int* Nneighbors;
   int* neighborList;
   int* beginIndex;
+} NeighListOne;
+
+//neighbor list structure
+typedef struct
+{
+  int numberOfNeighborLists;
+  NeighListOne * lists;
 } NeighList;
 
 
@@ -25,16 +32,17 @@ int nbl_create_paddings(int const numberOfParticles, double const cutoff,
     std::vector<int> & speciesCodeOfPaddings,
     std::vector<int> & masterOfPaddings);
 
-int nbl_build(NeighList *const nl, int const numberOfParticles, double const cutoff,
-    double const * coordinates, int const * needNeighbors);
+int nbl_build(NeighList *const nl, int const numberOfParticles,
+    double const * coordinates, double const influenceDistance,
+    int const numberOfCutoffs, double const * cutoffs, int const * needNeighbors);
 
-int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
-    int * const numberOfNeighbors, int const ** const neighborsOfParticle);
+//int nbl_get_neigh(NeighList const * const nl, int const particleNumber,
+//    int * const numberOfNeighbors, int const ** const neighborsOfParticle);
 
 void nbl_clean(NeighList ** const nl);
 
 // this is compatible with the kim-api-v2 requirement for get_neigh function
-int nbl_get_neigh_kim(void const * const nl, int const numberOfCutoffs,
+int nbl_get_neigh(void const * const nl, int const numberOfCutoffs,
     double const * const cutoffs, int const neighborListIndex,
     int const particleNumber, int * const numberOfNeighbors,
     int const ** const neighborsOfParticle);

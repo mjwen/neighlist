@@ -97,6 +97,8 @@ PYBIND11_MODULE(neighlist, module) {
     "Return(number_of_neighbors, neighbors_of_particle, error)"
   );
 
+  // cannot bind `nbl_get_neigh_kim` directly, since it has pointer arguments
+  // so we return a pointer to this function
   module.def("get_neigh_kim",
   []() {
       // the allowed return pointer type by pybind11 is: void const *

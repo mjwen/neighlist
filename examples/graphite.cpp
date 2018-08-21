@@ -36,7 +36,8 @@ int main()
 {
   double alat = 2.46;
   double d = 3.35;
-  double cutoff = d+0.01;
+  double cutoffs[2] = {d+0.01, d+0.02};
+  double influenceDistance = cutoffs[1];
   int pbc[3] = {1,1,1};
 
   double cell[9] = {alat, 0, 0,   0.5*alat, sqrt(3)*0.5*alat, 0,   0, 0, 2*d};
@@ -76,7 +77,7 @@ int main()
   std::vector<int> masterOfPaddings;
 
   /* create padding atoms */
-  nbl_create_paddings(numberOfParticles, cutoff, cell, pbc, coordinates,
+  nbl_create_paddings(numberOfParticles, influenceDistance, cell, pbc, coordinates,
       speciesCode, numberOfPaddings, coordinatesOfPaddings,
       speciesCodeOfPadding, masterOfPaddings);
 
@@ -104,19 +105,39 @@ int main()
   // create neighbor list
   NeighList* nl;
   nbl_initialize(&nl);
-  nbl_build(nl, total, cutoff, coords_all, needNeighbors);
-
-  // use get neigh
-  int particleNumber = 0;
-  int numberOfNeighbors;
-  int const * neighborsOfParticle;
-  nbl_get_neigh(nl, particleNumber, &numberOfNeighbors, &neighborsOfParticle);
 
   std::cout<<"get_neigh test"<<std::endl;
-  std::cout<<"particleNumber = " << particleNumber;
-  std::cout<< ", numberOfNeighbors = " << numberOfNeighbors << std::endl;
-  for (int i=0; i<numberOfNeighbors; i++) {
-    std::cout<<"i = " << i << ", neigh = " << neighborsOfParticle[i] << std::endl;
+  for(int k=0; k<2; k++) {
+    nbl_build(nl, total, coords_all, influenceDistance, 2, cutoffs, needNeighbors);
+
+    // use get neigh
+    int particleNumber = 0;
+    int numberOfNeighbors;
+    int const * neighborsOfParticle;
+    int neighborListIndex = 0;
+    nbl_get_neigh(nl, 2, cutoffs, neighborListIndex, particleNumber,
+        &numberOfNeighbors, &neighborsOfParticle);
+
+    std::cout<<std::endl<<std::endl;
+    std::cout<<"iteration = " << k <<std::endl;
+    std::cout<<"neighbor list index = " << neighborListIndex <<std::endl;
+    std::cout<<"particleNumber = " << particleNumber;
+    std::cout<< ", numberOfNeighbors = " << numberOfNeighbors << std::endl;
+    for (int i=0; i<numberOfNeighbors; i++) {
+      std::cout<<"i = " << i << ", neigh = " << neighborsOfParticle[i] << std::endl;
+    }
+
+    neighborListIndex = 1;
+    nbl_get_neigh(nl, 2, cutoffs, neighborListIndex, particleNumber,
+        &numberOfNeighbors, &neighborsOfParticle);
+
+    std::cout<<"neighbor list index = " << neighborListIndex <<std::endl;
+    std::cout<<"particleNumber = " << particleNumber;
+    std::cout<< ", numberOfNeighbors = " << numberOfNeighbors << std::endl;
+    for (int i=0; i<numberOfNeighbors; i++) {
+      std::cout<<"i = " << i << ", neigh = " << neighborsOfParticle[i] << std::endl;
+    }
+
   }
 
   // print to xyz file
